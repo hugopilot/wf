@@ -6,17 +6,54 @@
 #include <cmath>
 #include <functional>
 #include <algorithm>
-#include <unistd.h>
-#include <sys/stat.h>
+
+#define DEF_SECTOR_SIZE 512
 
 #ifdef __linux__
+#include <unistd.h>
+#include <sys/stat.h>
 #define FAKE_CMD "touch -d 2060-1-1"
 #define DELETE_CMD "rm " 
+
+/* Fake creation date */
+void fwipe::fake_attributes(const char* filename) {
+	std::ostringstream ss0;
+	ss0 << FAKE_CMD;
+	ss0 << " \"" << filename << "\"";
+
+	if (system(ss0.str().c_str()) != 0) {
+		std::cout << "Did not succeed in fucking the metadata...try again in sudo mode\n";
+	}
+}
+
+#elif _WIN32
+#include <direct.h>
+#include <windows.h>
+#define DELETE_CMD "del "
+#define F_DAY 1
+#define F_MONTH = 1
+#define F_YEAR 2060
+
+void fwipe::fake_attributes(const char* filename) {
+	FILETIME ftime;
+	SYSTEMTIME fake_time;
+	fake_time.wDay = (WORD)F_DAY;
+	
+	fake_time.wYear = (WORD)F_YEAR;
+	fake_time.wMonth = 1;
+	HANDLE file;
+	SystemTimeToFileTime(&fake_time, &ftime);
+	file = CreateFile(filename, GENERIC_WRITE, NULL, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (!SetFileTime(file, &ftime, &ftime, &ftime )) { std::cout << "Did not succeed in fucking the metadata!\n";}
+	CloseHandle(file);
+}
+
+#pragma message ( "WARNING: Windows is not officially supported!" )
 #else
 #error "Your OS is not supporting this library!"
 #endif
 
-#define SECTOR_SIZE 1024
+
 
 
 /* Creates a random byte */
@@ -28,8 +65,8 @@ void rnd_char_gen(unsigned char **arr){
 	auto rand = std::bind(std::uniform_int_distribution<>(0, UCHAR_MAX),
             std::mt19937(seed));
 	
-	unsigned char *c = new unsigned char[SECTOR_SIZE];
-	std::generate_n(c, SECTOR_SIZE, rand);
+	unsigned char *c = new unsigned char[DEF_SECTOR_SIZE];
+	std::generate_n(c, DEF_SECTOR_SIZE, rand);
 	*arr = c;
 }
 
@@ -39,7 +76,7 @@ double fwipe::get_file_size(const char* filename){
 	is.open(filename, std::ios::binary);
 	is.seekg(0,std::ios::end);
 	// Return sector count instead of the file size
-	return ceil(is.tellg()/SECTOR_SIZE);
+	return ceil(is.tellg()/DEF_SECTOR_SIZE);
 }
 
 /* Overwrites the file */
@@ -49,7 +86,7 @@ void fwipe::overwrite_contents(const char* fName, unsigned int l){
 	for(unsigned int i = 0; i <= l; i++){
 		rnd_char_gen(&buf);
 		// Cast to keep ostream happy :D
-		f_stream.write(reinterpret_cast<char*>(buf), SECTOR_SIZE);
+		f_stream.write(reinterpret_cast<char*>(buf), DEF_SECTOR_SIZE);
 		
 		// Show the current sector
 		std::cout<<"\rCurrent sector: " << i;
@@ -58,16 +95,8 @@ void fwipe::overwrite_contents(const char* fName, unsigned int l){
 	std::cout << "\n\n";
 }
 
-std::ostringstream ss0;
-/* Fake creation date */
-void fwipe::fake_attributes(const char* filename){
-	ss0 << FAKE_CMD;
-	ss0 << " \"" << filename << "\"";
-	
-	if(system(ss0.str().c_str()) != 0){
-		std::cout << "Did not succeed in fucking the metadata...try again in sudo mode\n";
-	}	
-}
+
+
 inline bool check_file_exists (const std::string& name) {
   struct stat buffer;   
   return (stat (name.c_str(), &buffer) == 0); 
@@ -80,7 +109,7 @@ void fwipe::set_zero_size(const char* filename){
 	ofs.close();
 }
 
-std::ostringstream ss1;
+
 
 /* Public wipe function */
 void fwipe::wipe_file(const char* filename, int i_wipe = 3){
@@ -88,10 +117,11 @@ void fwipe::wipe_file(const char* filename, int i_wipe = 3){
 	
 	// First determain length
 	unsigned int lt = get_file_size(filename);
-	std::cout<<"Number of sectors (" << SECTOR_SIZE << " Bytes) = " << lt << std::endl;
+	std::cout<<"Number of sectors (" << DEF_SECTOR_SIZE << " Bytes) = " << lt << std::endl;
 
 	// Then overwrite it's contents
-	for(int i = 0; i <= i_wipe; i++) { std::cout<<"OVERWRITE RUN " << i << " OUT OF " << i_wipe << std::endl; overwrite_contents(filename, lt); };
+	std::ostringstream ss1;
+	for (int i = 1; i <= i_wipe; i++) { std::cout << "OVERWRITE RUN " << i << " OUT OF " << i_wipe << std::endl; overwrite_contents(filename, lt); };
 	fake_attributes(filename);
 	set_zero_size(filename);
 	ss1 << DELETE_CMD << "\"" << filename << "\"";
