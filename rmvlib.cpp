@@ -29,23 +29,41 @@ void fwipe::fake_attributes(const char* filename) {
 #elif _WIN32
 #include <direct.h>
 #include <windows.h>
+#include <time.h>
 #define DELETE_CMD "del "
 #define F_DAY 1
-#define F_MONTH = 1
+#define F_MONTH 1
 #define F_YEAR 2060
+void TimetToFileTime(time_t t, LPFILETIME pft)
+{
+	LONGLONG ll = Int32x32To64(t, 10000000) + 116444736000000000;
+	pft->dwLowDateTime = (DWORD)ll;
+	pft->dwHighDateTime = ll >> 32;
+}
+
 
 void fwipe::fake_attributes(const char* filename) {
 	FILETIME ftime;
-	SYSTEMTIME fake_time;
+	/*SYSTEMTIME fake_time;
 	fake_time.wDay = (WORD)F_DAY;
-	
 	fake_time.wYear = (WORD)F_YEAR;
-	fake_time.wMonth = 1;
+	fake_time.wMonth = (WORD)F_MONTH;
+	fake_time.wMilliseconds = NULL;
+	fake_time.wMinute = NULL;
+	fake_time.wSecond = NULL;
+	fake_time.wHour = NULL;*/
+	time_t fake_time = 2840140800;
+	TimetToFileTime(fake_time, &ftime);
 	HANDLE file;
-	SystemTimeToFileTime(&fake_time, &ftime);
-	file = CreateFile(filename, GENERIC_WRITE, NULL, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-	if (!SetFileTime(file, &ftime, &ftime, &ftime )) { std::cout << "Did not succeed in fucking the metadata!\n";}
+	file = CreateFile(filename, FILE_WRITE_ATTRIBUTES, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	int r = 0;
+	r = SetFileTime(file, &ftime, &ftime, &ftime);
+	if (r == 0) {
+		std::cout << "Did not succeed in fucking the metadata!\n HRESULT:" << HRESULT_FROM_WIN32(GetLastError()) << std::endl;
+		CloseHandle(file);
+	}
 	CloseHandle(file);
+	std::cout << r << std::endl;
 }
 
 #pragma message ( "WARNING: Windows is not officially supported!" )
