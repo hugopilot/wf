@@ -1,3 +1,7 @@
+/* Code written by HugoPilot
+ * Licensed under GPLv3
+ */
+
 #include <sstream>
 #include <random>
 #include <climits>

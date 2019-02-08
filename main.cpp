@@ -1,3 +1,8 @@
+/* Code written by HugoPilot
+ 
+ * Licensed under GPLv3
+ 
+ */
 #include <iostream>
 #include <string>
 #include "rmvlib.h"
