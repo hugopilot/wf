@@ -1,6 +1,6 @@
 /* ****************************************************
  * rmvlib is a simple library to safely delete files. *
- * It deletes files by overwriting them, and changing *
+ * It deletes files by overwriting them and changing *
  * the metadata before deleting it from the filetable *
  *						      *
  * Written by HugoPilot.			      *
