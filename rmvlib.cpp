@@ -10,8 +10,10 @@
 #include <cmath>
 #include <functional>
 #include <algorithm>
+#include <experimental/filesystem>
 
-#define DEF_SECTOR_SIZE 512
+
+namespace fs = std::experimental::filesystem;
 
 #ifdef __linux__
 #include <unistd.h>
@@ -117,13 +119,6 @@ void fwipe::overwrite_contents(const char* fName, unsigned int l){
 	std::cout << "\n\n";
 }
 
-
-
-inline bool check_file_exists (const std::string& name) {
-  struct stat buffer;   
-  return (stat (name.c_str(), &buffer) == 0); 
-}
-
 /* Deletes file contents */
 void fwipe::set_zero_size(const char* filename){
 	std::ofstream ofs;
@@ -134,12 +129,13 @@ void fwipe::set_zero_size(const char* filename){
 
 
 /* Public wipe function */
-void fwipe::wipe_file(const char* filename, int i_wipe = 3){
-	if(!check_file_exists(filename)){std::cout<<"File does not exist\n";return;}
+void fwipe::wipe_file(const char* filename, int i_wipe, int sector_size){
 	
+
+
 	// First determain length
 	unsigned int lt = get_file_size(filename);
-	std::cout<<"Number of sectors (" << DEF_SECTOR_SIZE << " Bytes) = " << lt << std::endl;
+	std::cout<<"Number of sectors (" << sector_size << " Bytes) = " << lt << std::endl;
 
 	// Then overwrite it's contents
 	std::ostringstream ss1;
