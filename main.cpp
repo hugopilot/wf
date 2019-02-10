@@ -3,7 +3,7 @@
  */
 
 #include <iostream>
-#include <string>
+#include <string.h>
 #include <vector>
 #include <experimental/filesystem>
 #include "rmvlib.h"
@@ -28,22 +28,23 @@ PATH_STATE check_path(const fs::path& path){
                 return ISFILE;
         if(fs::is_directory(path))
                 return ISDIR;
+	return DNE;
 }
 
 
-void compile_args(int argc, char** argv, std::vector<std::string> *files, RMV_SETTINGS *settings, bool noc){
-	noc = false;
+void compile_args(int argc, char** argv, std::vector<std::string> *files, RMV_SETTINGS *settings, bool * noc){
+	*noc = false;
 	for(int i = 1; i < argc; i++){
-			if(argv[i] == "-s"){
+			if(strcmp(argv[i], "-s") == 0){
 				settings->sector_size = std::stoi(argv[i+1]);
 				i++;
 			}
-			else if (argv[i] == "-i"){
+			else if (strcmp(argv[i],"-i") == 0){
 				settings->i_wipe = std::stoi(argv[i+1]);
 				i++;
 			}
-			else if(argv[i] == "-y")
-				noc = true;
+			else if(strcmp(argv[i], "-y") == 0)
+				*noc = true;
 			else{
 				PATH_STATE st = check_path(argv[i]);
 				if(st == DNE){
@@ -75,7 +76,7 @@ int main(int argc, char** argv){
 	if(argc <=1){ std::cout<<"No Args!\n"; return 1; }
 
 	// Parse/compile all those arguments
-	compile_args(argc, argv, &f, &s, conf);
+	compile_args(argc, argv, &f, &s, &conf);
 
 	// If -y was given, skip the comfimation question
 	if(!conf){
@@ -90,7 +91,10 @@ int main(int argc, char** argv){
 	// Loop though all the files.
 	std::cout << "Let's fuck som files!\n";
 	for(unsigned int c = 0; c < f.size(); c++){
+		std::cout << "Deleting: " << f[c] << std::endl;
 		fwipe::wipe_file(f[c].c_str(), s.i_wipe, s.sector_size);
+		if(c != f.size() - 1)
+			system("clear");
 	}
 
 	// Give an outro message and exit normally
