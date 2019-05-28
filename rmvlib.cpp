@@ -15,7 +15,7 @@
 
 namespace fs = std::experimental::filesystem;
 
-#ifdef __linux__
+#if defined(__linux__) || defined(__CYGWIN__)
 #include <unistd.h>
 #include <sys/stat.h>
 #define FAKE_CMD "touch -d 2060-1-1"
