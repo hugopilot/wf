@@ -1,3 +1,5 @@
+**OBSOLETE**: Linux users can use `shred`. This was just another random side-project of mine :)
+
 # wf
 Wipes your Files.
 
@@ -7,3 +9,5 @@ Well, first of all it will overwrite the contents of the file a couple of times 
 
 
 **This app only compiles with g++ atm. MSVC starts whining about stuff and I can't seem to fix it. So for Windows users: Use CYGWIN**
+
+
